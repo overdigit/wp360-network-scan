@@ -1,0 +1,9 @@
+[Unit]
+Description=A daemon for WP360 discovery via UDP broadcast packets.
+After=multi-user.target
+
+[Service]
+ExecStart=/usr/libexec/wp360-network-scan/wp360-network-scan-daemon
+
+[Install]
+WantedBy=multi-user.target

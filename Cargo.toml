@@ -1,5 +1,7 @@
 [package]
 name = "wp360-network-scan"
+authors = ["OVERDIGIT <info@overdigit.com>"]
+description = "A daemon for WP360 discovery via UDP broadcast packets."
 version = "0.1.0"
 edition = "2024"
 
@@ -9,3 +11,16 @@ get_if_addrs = "0.5.3"
 gethostname = "1.1.0"
 rand = "0.10.2"
 tokio = { version = "1.52.3", features = ["rt-multi-thread", "net", "time", "macros"] }
+
+[package.metadata.deb]
+revision = "1"
+maintainer-scripts = "debian/"
+section = "misc"
+systemd-units = { }
+extended-description = """\
+A daemon employing a custom protocol over UDP broadcast packets on port 8005 for discovery over network.\
+Meant for use on OVERDIGIT WP360 PLC devices, but will work anywhere."""
+assets = [
+    ["target/release/daemon", "usr/libexec/wp360-network-scan/wp360-network-scan-daemon", "755"],
+    ["target/release/client", "usr/libexec/wp360-network-scan/", "755"],
+]
