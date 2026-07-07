@@ -6,17 +6,17 @@ use clap::Parser;
 use rand::random;
 use tokio::net::UdpSocket;
 
-static HEADING : &str = "WP360 network scan tool";
+static HEADING: &str = "WP360 network scan tool";
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 struct Args {
     /// Time between probes in milliseconds
-#[arg(short, long, default_value_t = 1000)]
+    #[arg(short, long, default_value_t = 1000)]
     interval: u64,
     /// Amount of probes to send; endless by default
-#[arg(short, long, default_value_t = 0)]
-    count: u64
+    #[arg(short, long, default_value_t = 0)]
+    count: u64,
 }
 
 #[tokio::main]
@@ -40,9 +40,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     send_buf.extend("WP360scan".bytes());
 
     let id = random::<u32>();
-    
+
     send_buf.extend(id.to_le_bytes());
-    
+
     let mut cache = HashSet::new();
 
     tokio::spawn(async move {
@@ -54,7 +54,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 Ok(_) => {
                     sent += 1;
                     interval.tick().await;
-                },
+                }
                 Err(e) => {
                     eprintln!("Sending scan failed: {e}");
                     break;
@@ -75,15 +75,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
         let mut head = 9;
 
-
-        let sender_id = u32::from_le_bytes([buf[head], buf[head+1], buf[head+2], buf[head+3]]);
+        let sender_id =
+            u32::from_le_bytes([buf[head], buf[head + 1], buf[head + 2], buf[head + 3]]);
         if sender_id != id {
             // Not our packet
             continue;
         }
         head += 4;
 
-        let reply_id = u32::from_le_bytes([buf[head], buf[head+1], buf[head+2], buf[head+3]]);
+        let reply_id = u32::from_le_bytes([buf[head], buf[head + 1], buf[head + 2], buf[head + 3]]);
         if !cache.insert(reply_id) {
             // Already received
             continue;
@@ -96,7 +96,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             continue;
         }
         head += 1;
-        let hostname = str::from_utf8(&buf[head..head+hostname_len]).unwrap_or("N/A");
+        let hostname = str::from_utf8(&buf[head..head + hostname_len]).unwrap_or("N/A");
         println!("Device: {hostname} ({src})");
         head += hostname_len;
         while head < amt {
@@ -107,9 +107,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 break;
             }
 
-            let iname = str::from_utf8(&buf[head..head+len]).unwrap_or("N/A");
+            let iname = str::from_utf8(&buf[head..head + len]).unwrap_or("N/A");
             head += len;
-            let tabs = (((iname.len() as f32) + 2.0) / 8.0 + 0.5) as usize;
+            #[expect(
+                clippy::cast_possible_truncation,
+                clippy::cast_precision_loss,
+                clippy::cast_sign_loss,
+                reason = "If any of these happen, we're gonna have bigger problems than indentation anyway"
+            )]
+            let tabs = (((iname.len() as f64) + 2.0) / 8.0 + 0.5) as usize;
             let addrs_n = buf[head] as usize;
             if head + addrs_n * 5 > amt {
                 eprintln!("Incomplete or malformed packet. [3]\n");
@@ -119,12 +125,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             let mut indent = 1;
             print!("{iname}:");
             for _i in 0..addrs_n {
-                println!("{}{}.{}.{}.{}/{}", "\t".repeat(indent), buf[head], buf[head+1], buf[head+2], buf[head+3], buf[head+4]);
+                println!(
+                    "{}{}.{}.{}.{}/{}",
+                    "\t".repeat(indent),
+                    buf[head],
+                    buf[head + 1],
+                    buf[head + 2],
+                    buf[head + 3],
+                    buf[head + 4]
+                );
                 head += 5;
                 indent = tabs;
             }
         }
         println!("{}", "─".repeat(HEADING.len() * 2));
     }
-
 }

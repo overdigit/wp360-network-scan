@@ -26,11 +26,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let addrs = ifaces
             .iter()
             .filter_map(|i| match &i.addr {
-                get_if_addrs::IfAddr::V4(a) if !a.ip.is_loopback() => Some((&i.name, a.ip, a.netmask)),
+                get_if_addrs::IfAddr::V4(a) if !a.ip.is_loopback() => {
+                    Some((&i.name, a.ip, a.netmask))
+                }
                 _ => None,
             })
             .fold(HashMap::new(), |mut acc, (iname, ip, netmask)| {
-                acc.entry(iname).or_insert_with(Vec::new).push((ip, netmask));
+                acc.entry(iname)
+                    .or_insert_with(Vec::new)
+                    .push((ip, netmask));
                 acc
             });
 
@@ -43,7 +47,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         let hostname = match hostname_raw.to_str() {
             Some(s) if s.len() <= 255 => s,
-            _ => "N/A"
+            _ => "N/A",
         };
 
         buf.push(hostname.len().try_into().unwrap());
