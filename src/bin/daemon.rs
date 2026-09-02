@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::net::UdpSocket;
 
 use gethostname::gethostname;
+use mac_address::mac_address_by_name;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let socket = UdpSocket::bind("0.0.0.0:8005")?;
@@ -60,8 +61,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 buf[start] = 0;
                 break;
             }
-            buf.push(iname.len().try_into().unwrap());
+            let mac = match mac_address_by_name(iname) {
+                Ok(Some(mac)) => mac.to_string(),
+                _ => "N/A".to_string(),
+            };
+            buf.push((iname.len() + mac.len() + 1).try_into().unwrap());
             buf.extend(iname.bytes());
+            buf.push(0);
+            buf.extend(mac.bytes());
             buf.push(ips.len().try_into().unwrap());
             for (a, nm) in ips {
                 buf.extend(a.octets());

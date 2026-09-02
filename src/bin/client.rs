@@ -107,7 +107,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 break;
             }
 
-            let iname = str::from_utf8(&buf[head..head + len]).unwrap_or("N/A");
+            let (iname, mac) = match str::from_utf8(&buf[head..head + len]) {
+                Ok(ifname) => match ifname.rsplit_once('\0') {
+                    Some((iname, mac)) => (iname, mac),
+                    None => (ifname, "N/A"),
+                },
+                Err(_) => ("N/A", "N/A"),
+            };
             head += len;
             #[expect(
                 clippy::cast_possible_truncation,
@@ -115,27 +121,26 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 clippy::cast_sign_loss,
                 reason = "If any of these happen, we're gonna have bigger problems than indentation anyway"
             )]
-            let tabs = (((iname.len() as f64) + 2.0) / 8.0 + 0.5) as usize;
+            let tabs = (((iname.len() as f64) + 5.0) / 8.0 + 0.9) as usize;
             let addrs_n = buf[head] as usize;
             if head + addrs_n * 5 > amt {
                 eprintln!("Incomplete or malformed packet. [3]\n");
                 break;
             }
             head += 1;
-            let mut indent = 1;
-            print!("{iname}:");
-            for _i in 0..addrs_n {
+            println!(" - {iname}:\tMAC: {mac}",);
+            for i in 0..addrs_n {
                 println!(
-                    "{}{}.{}.{}.{}/{}",
-                    "\t".repeat(indent),
+                    "{}IP{}: {}.{}.{}.{}/{}",
+                    "\t".repeat(tabs),
+                    i + 1,
                     buf[head],
                     buf[head + 1],
                     buf[head + 2],
                     buf[head + 3],
-                    buf[head + 4]
+                    buf[head + 4],
                 );
                 head += 5;
-                indent = tabs;
             }
         }
         println!("{}", "─".repeat(HEADING.len() * 2));
